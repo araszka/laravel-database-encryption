@@ -156,21 +156,7 @@ class Encrypter
     }
 
     /**
-     * Create a MAC for the given value.
-     *
-     * @param string $iv
-     * @param string $value
-     * @param string $key
-     * @return string
-     */
-    protected static function hash(string $iv, string $value, string $key): string
-    {
-        return hash_hmac('sha256', $iv . $value, $key);
-    }
-
-    /**
      * @param string $column
-     * @param string $salt
      * @return string
      */
     public static function getDecryptSql(string $column): string
@@ -184,9 +170,22 @@ class Encrypter
     }
 
     /**
+     * Create a MAC for the given value.
+     *
+     * @param string $iv
+     * @param string $value
+     * @param string $key
+     * @return string
+     */
+    private static function hash(string $iv, string $value, string $key): string
+    {
+        return hash_hmac('sha256', $iv . $value, $key);
+    }
+
+    /**
      * @return false|string
      */
-    public static function getEncryptionKey(): false|string
+    private static function getEncryptionKey(): false|string
     {
         if (Str::startsWith($key = config('app.key'), $prefix = 'base64:')) {
             $key = base64_decode(Str::after($key, $prefix));
