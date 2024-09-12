@@ -3,21 +3,18 @@
  * src/Providers/EncryptServiceProvider.php.
  *
  */
+
 namespace ESolution\DBEncryption\Providers;
 
+use ESolution\DBEncryption\Console\Commands\DecryptModel;
+use ESolution\DBEncryption\Console\Commands\EncryptModel;
 use ESolution\DBEncryption\Encrypter;
-use ESolution\DBEncryption\Traits\Salty;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 
-use ESolution\DBEncryption\Console\Commands\EncryptModel;
-use ESolution\DBEncryption\Console\Commands\DecryptModel;
-
 class DBEncryptionServiceProvider extends ServiceProvider
 {
-    use Salty;
-
     /**
      * Bootstrap the application services.
      *
@@ -34,12 +31,12 @@ class DBEncryptionServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
 
             $this->publishes([
-                __DIR__.'/../Config/config.php' => config_path('laravelDatabaseEncryption.php'),
+                __DIR__ . '/../Config/config.php' => config_path('laravelDatabaseEncryption.php'),
             ], 'config');
 
             $this->commands([
                 EncryptModel::class,
-                DecryptModel::class
+                DecryptModel::class,
             ]);
         }
     }
@@ -51,7 +48,7 @@ class DBEncryptionServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->mergeConfigFrom(__DIR__.'/../Config/config.php', 'laravelDatabaseEncryption');
+        $this->mergeConfigFrom(__DIR__ . '/../Config/config.php', 'laravelDatabaseEncryption');
     }
 
     /**
@@ -62,20 +59,20 @@ class DBEncryptionServiceProvider extends ServiceProvider
         Validator::extend('unique_encrypted', function ($attribute, $value, $parameters, $validator) {
             // Initialize
             $withFilter = count($parameters) > 3;
-            $ignore_id = $parameters[2] ?? '';
+            $ignore_id  = $parameters[2] ?? '';
 
             // Check using normal checker
             $data = DB::table($parameters[0])
                 ->beforeQuery(fn() => Encrypter::setBlockEncryptionModeStatement())
-                ->whereRaw(Encrypter::getDecryptSql($parameters[1], $this->salt()) . " = ?", [$value]);
+                ->whereRaw(Encrypter::getDecryptSql($parameters[1]) . " = ?", [$value]);
 
-            $data = $ignore_id != '' ? $data->where('id','!=',$ignore_id) : $data;
+            $data = $ignore_id != '' ? $data->where('id', '!=', $ignore_id) : $data;
 
             if ($withFilter) {
                 $data->where($parameters[3], $parameters[4]);
             }
 
-            if($data->first()){
+            if ($data->first()) {
                 return false;
             }
 
@@ -85,18 +82,18 @@ class DBEncryptionServiceProvider extends ServiceProvider
         Validator::extend('exists_encrypted', function ($attribute, $value, $parameters, $validator) {
             // Initialize
             $withFilter = count($parameters) > 3;
-            if(!$withFilter){
+            if (!$withFilter) {
                 $ignore_id = $parameters[2] ?? '';
-            }else{
+            } else {
                 $ignore_id = $parameters[4] ?? '';
             }
 
             // Check using normal checker
             $data = DB::table($parameters[0])
                 ->beforeQuery(fn() => Encrypter::setBlockEncryptionModeStatement())
-                ->whereRaw(Encrypter::getDecryptSql($parameters[1], $this->salt()) . " = ?", [$value]);
+                ->whereRaw(Encrypter::getDecryptSql($parameters[1]) . " = ?", [$value]);
 
-            $data = $ignore_id != '' ? $data->where('id','!=',$ignore_id) : $data;
+            $data = $ignore_id != '' ? $data->where('id', '!=', $ignore_id) : $data;
 
             if ($withFilter) {
                 $data->where($parameters[2], $parameters[3]);

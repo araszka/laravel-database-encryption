@@ -7,13 +7,10 @@
 namespace ESolution\DBEncryption\Builders;
 
 use ESolution\DBEncryption\Encrypter;
-use ESolution\DBEncryption\Traits\Salty;
 use Illuminate\Database\Eloquent\Builder;
 
 class EncryptionEloquentBuilder extends Builder
 {
-    use Salty;
-
     /**
      * @param string      $column
      * @param string      $opOrValue
@@ -24,7 +21,7 @@ class EncryptionEloquentBuilder extends Builder
     {
         $operation  = isset($value) ? $opOrValue : '=';
         $value      = $value ?: $opOrValue;
-        $decryptSql = Encrypter::getDecryptSql($column, $this->salt());
+        $decryptSql = Encrypter::getDecryptSql($column);
 
         return $this->beforeQuery(fn() => Encrypter::setBlockEncryptionModeStatement())
             ->whereRaw("$decryptSql $operation ?", [$value]);
@@ -40,7 +37,7 @@ class EncryptionEloquentBuilder extends Builder
     {
         $operation  = isset($value) ? $opOrValue : '=';
         $value      = $value ?: $opOrValue;
-        $decryptSql = Encrypter::getDecryptSql($column, $this->salt());
+        $decryptSql = Encrypter::getDecryptSql($column);
 
         return $this->beforeQuery(fn() => Encrypter::setBlockEncryptionModeStatement())
             ->orWhereRaw("$decryptSql $operation ?", [$value]);
@@ -54,6 +51,6 @@ class EncryptionEloquentBuilder extends Builder
     public function orderByEncrypted(string $column, string $direction = 'asc'): self
     {
         return $this->beforeQuery(fn() => Encrypter::setBlockEncryptionModeStatement())
-            ->orderByRaw(Encrypter::getDecryptSql($column, $this->salt()) . " $direction");
+            ->orderByRaw(Encrypter::getDecryptSql($column) . " $direction");
     }
 }

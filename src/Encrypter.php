@@ -6,15 +6,13 @@
 
 namespace ESolution\DBEncryption;
 
-use ESolution\DBEncryption\Traits\Salty;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Encryption\EncryptException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class Encrypter
 {
-    use Salty;
-
     /**
      * The supported cipher algorithms and their properties.
      *
@@ -34,10 +32,10 @@ class Encrypter
      */
     public static function encrypt(string $value): string|false
     {
-        $cipher = config('laravelDatabaseEncryption.encrypt_method');
+        $cipher = strtolower(config('app.cipher'));
         $iv     = random_bytes(openssl_cipher_iv_length($cipher));
         $tag    = null;
-        $key    = self::getKey();
+        $key    = self::getEncryptionKey();
 
         $value = openssl_encrypt(
             data: $value,
@@ -54,7 +52,7 @@ class Encrypter
         $iv  = base64_encode($iv);
         $tag = base64_encode($tag ?: '');
 
-        $mac = self::$supportedCiphers[strtolower($cipher)]['aead']
+        $mac = self::$supportedCiphers[$cipher]['aead']
             ? '' // For AEAD-algorithms, the tag / MAC is returned by openssl_encrypt...
             : self::hash($iv, $value, $key);
 
@@ -73,46 +71,35 @@ class Encrypter
      */
     public static function decrypt(string $value): string|false
     {
-        $cipher = config('laravelDatabaseEncryption.encrypt_method');
-        $tag = null;
-        $key = self::getKey();
+        $cipher = strtolower(config('app.cipher'));
+        $key    = self::getEncryptionKey();
 
         $payload = json_decode(base64_decode($value), true);
         $iv      = base64_decode($payload['iv']);
 
-        $tag = empty($payload['tag']) ? null : base64_decode($payload['tag']);
-
-//        $this->ensureTagIsValid(
-//            $tag = empty($payload['tag']) ? null : base64_decode($payload['tag'])
-//        );
-
-        $foundValidMac = false;
-
-        // Here we will decrypt the value. If we are able to successfully decrypt it
-        // we will then unserialize it and return it out to the caller. If we are
-        // unable to decrypt this value we will throw out an exception message.
-//        foreach ($this->getAllKeys() as $key) {
-//            if (
-//                $this->shouldValidateMac() &&
-//                ! ($foundValidMac = $foundValidMac || $this->validMacForKey($payload, $key))
-//            ) {
-//                continue;
-//            }
-
-        $decrypted = \openssl_decrypt(
-            $payload['value'], strtolower($cipher), $key, 0, $iv, $tag ?? ''
+        self::ensureTagIsValid(
+            $cipher,
+            $tag = empty($payload['tag']) ? null : base64_decode($payload['tag'])
         );
 
-//            if ($decrypted !== false) {
-//                break;
-//            }
-//        }
+        //TODO: Add support for previous encryption keys.
 
-//        if ($this->shouldValidateMac() && ! $foundValidMac) {
-//            throw new DecryptException('The MAC is invalid.');
-//        }
+        if (
+            self::shouldValidateMac($cipher) &&
+            !self::validMacForKey($payload, $key)
+        ) {
+            throw new DecryptException('The MAC is invalid.');
+        }
 
-        if (($decrypted ?? false) === false) {
+        $decrypted = openssl_decrypt(
+            data: $payload['value'],
+            cipher_algo: $cipher,
+            passphrase: $key,
+            iv: $iv,
+            tag: $tag ?? ''
+        );
+
+        if ($decrypted === false) {
             throw new DecryptException('Could not decrypt the data.');
         }
 
@@ -120,19 +107,52 @@ class Encrypter
     }
 
     /**
-     * @return string
+     * Determine if the MAC is valid for the given payload and key.
+     *
+     * @param array  $payload
+     * @param string $key
+     * @return bool
      */
-    public static function setBlockEncryptionModeStatement(): string
+    protected static function validMacForKey(#[\SensitiveParameter] $payload, $key)
     {
-        return DB::statement("SET block_encryption_mode = ?;", [config('laravelDatabaseEncryption.encrypt_method')]);
+        return hash_equals(
+            self::hash($payload['iv'], $payload['value'], $key), $payload['mac']
+        );
+    }
+
+    /**
+     * Determine if we should validate the MAC while decrypting.
+     *
+     * @return bool
+     */
+    protected static function shouldValidateMac(string $cipher)
+    {
+        return !self::$supportedCiphers[strtolower($cipher)]['aead'];
+    }
+
+    /**
+     * Ensure the given tag is a valid tag given the selected cipher.
+     *
+     * @param string $tag
+     * @return void
+     */
+    protected static function ensureTagIsValid(string $cipher, $tag)
+    {
+        if (self::$supportedCiphers[strtolower($cipher)]['aead'] && strlen($tag) !== 16) {
+            throw new DecryptException('Could not decrypt the data.');
+        }
+
+        if (!self::$supportedCiphers[strtolower($cipher)]['aead'] && is_string($tag)) {
+            throw new DecryptException('Unable to use tag because the cipher algorithm does not support AEAD.');
+        }
     }
 
     /**
      * @return string
      */
-    protected static function getKey(): string
+    public static function setBlockEncryptionModeStatement(): string
     {
-        return (new self())->salt();
+        return DB::statement("SET block_encryption_mode = ?;", [strtolower(config('app.cipher'))]);
     }
 
     /**
@@ -145,7 +165,7 @@ class Encrypter
      */
     protected static function hash(string $iv, string $value, string $key): string
     {
-        return hash_hmac(config('laravelDatabaseEncryption.hash_method'), $iv . $value, $key);
+        return hash_hmac('sha256', $iv . $value, $key);
     }
 
     /**
@@ -153,12 +173,25 @@ class Encrypter
      * @param string $salt
      * @return string
      */
-    public static function getDecryptSql(string $column, string $salt): string
+    public static function getDecryptSql(string $column): string
     {
+        $salt      = self::getEncryptionKey();
         $jsonPart  = "CONVERT(FROM_BASE64(`$column`) USING utf8mb4)";
         $ivPart    = "FROM_BASE64(JSON_UNQUOTE(JSON_EXTRACT($jsonPart, '$.iv')))";
         $valuePart = "FROM_BASE64(JSON_UNQUOTE(json_extract($jsonPart, '$.value')))";
 
         return "AES_DECRYPT($valuePart, '$salt', $ivPart)";
+    }
+
+    /**
+     * @return false|string
+     */
+    public static function getEncryptionKey(): false|string
+    {
+        if (Str::startsWith($key = config('app.key'), $prefix = 'base64:')) {
+            $key = base64_decode(Str::after($key, $prefix));
+        }
+
+        return $key;
     }
 }
