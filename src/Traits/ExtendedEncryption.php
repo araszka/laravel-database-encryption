@@ -7,7 +7,6 @@
 namespace ESolution\DBEncryption\Traits;
 
 use ESolution\DBEncryption\Builders\EncryptionEloquentBuilder;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 
 /**
  * @method static EncryptionEloquentBuilder query()
@@ -19,10 +18,10 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 trait ExtendedEncryption
 {
     /**
-     * @param QueryBuilder $query
+     * @param $query
      * @return EncryptionEloquentBuilder
      */
-    public function newEloquentBuilder(QueryBuilder $query): EncryptionEloquentBuilder
+    public function newEloquentBuilder($query)
     {
         return new EncryptionEloquentBuilder($query);
     }
