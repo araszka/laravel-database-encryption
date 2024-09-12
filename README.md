@@ -1,25 +1,19 @@
 # Laravel Database Encryption Package
 
+[![MIT Licensed](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/elgibor-solution/laravel-database-encryption.svg?style=flat-square)](https://packagist.org/packages/elgibor-solution/laravel-database-encryption) 
-[![MIT Licensed](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md) 
-[![Build Status](https://travis-ci.com/elgibor-solution/laravel-database-encryption.svg?branch=main)](https://travis-ci.com/elgibor-solution/laravel-database-encryption) 
-[![Total Downloads](https://img.shields.io/packagist/dt/elgibor-solution/laravel-database-encryption.svg?style=flat-square)](https://packagist.org/packages/elgibor-solution/laravel-database-encryption)
-
-
-## Package for encrypting and decrypting model attributes for Laravel using openssl
+## Package to extend Eloquent with the capability to search in encrypted values
 
 ## Key Features
 
-* Encrypt, Decrypt database fields easily
-* Minimal configuration
-* Include searching encrypted data using the following:
-    `whereEncrypted` and `orWhereEncrypted`
+* Add custom validation rules for encrypted database columns
+* Add searching capabilities for encrypted data using the following:
+  `whereEncrypted`, `orWhereEncrypted` and `whereInEncrypted`
 * Uses openssl for encrypting and decrypting fields
 
 ## Requirements
 
-* Laravel: >= 10
+* Laravel: >= 10.0
 * PHP: >= 8.2
 
 ## Schema Requirements
@@ -32,114 +26,119 @@ We highly recommend to alter your column types to `TEXT` or `LONGTEXT`
 
 ## Installation
 
-### Step 1: Composer
+### Step 1: Composer Source
+
+Add the following to your "repositories" block in composer.json:
+
+```
+{
+    "type": "git",
+    "url": "https://github.com/araszka/laravel-database-encryption.git"
+}
+```
+
+### Step 2: Composer Require
 
 Via Composer command line:
 
 ```bash
-$ composer require elgibor-solution/laravel-database-encryption
+composer require elgibor-solution/laravel-database-encryption
 ```
 
 ## Usage
 
-Use the `EncryptedAttribute` trait in any Eloquent model that you wish to apply encryption
-to and define a `protected $encrypted` array containing a list of the attributes to encrypt.
+Use Laravels casting abilities to determine whether an attribute should be encrypted.
 
 For example:
 
 ```php
-    
-    use ESolution\DBEncryption\Traits\ExtendedEncryption;
+use ESolution\DBEncryption\Traits\ExtendedEncryption;
 
-    class User extends Eloquent 
-    {
-        use ExtendedEncryption;
-       
-        /**
-         * The attributes that should be encrypted on save.
-         *
-         * @var array
-         */
-        protected $encryptable = [
-            'first_name', 
-            'last_name'
-        ];
-    }
+class User extends Eloquent 
+{
+    use ExtendedEncryption;
+   
+    /**
+     * The attributes that should be encrypted on save.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'first_name' => 'encrypted', 
+        'last_name' => 'encrypted'
+    ];
+}
 ```
-
-By including the `EncryptedAttribute` trait, the `setAttribute()`, `getAttribute()` and `getAttributeFromArray()`
-methods provided by Eloquent are overridden to include an additional step.
 
 ### Searching Encrypted Fields Example:
-Searching encrypted field can be done by calling the `whereEncrypted` and `orWhereEncrypted` functions
-similar to laravel eloquent `where` and `orWhere`.
 
+Add the [ExtendedEncryption](src%2FTraits%2FExtendedEncryption.php) trait to any model you want to search encrypted values on.
+Searching encrypted field can be done by calling the `whereEncrypted`, `orWhereEncrypted` or `whereInEncrypted` functions
+similar to laravel eloquent `where`, `orWhere` and `whereIn`.
 
 ```php
-    namespace App\Http\Controllers;
+namespace App\Http\Controllers;
 
-    use App\User;
-    
-    class UsersController extends Controller 
+use App\User;
+
+class UsersController extends Controller 
+{
+    public function index(Request $request)
     {
-        public function index(Request $request)
-        {
-            $user = User::whereEncrypted('first_name','john')
-                        ->orWhereEncrypted('last_name','!=','Doe')
-                        ->firstOrFail();
-            
-            return $user;
-        }
+        return User::whereEncrypted('first_name','john')
+                    ->orWhereEncrypted('last_name','!=','Doe')
+                    ->get();
     }
+}
 ```
-
-### Encrypt your current data
- If you have current data in your database you can encrypt it with the following command.
-
-```php 
-php artisan encryptable:encryptModel 'App\User'
-```
-    
- Additionally you can decrypt it using the following commmand.
- 
-```php 
-php artisan encryptable:decryptModel 'App\User'
-```
-
- Note: You must implement first the `Encryptable` trait and set `$encryptable` attributes
 
 ### Exists and Unique Validation Rules
- If you are using exists and unique rules with encrypted values replace it with exists_encrypted and unique_encrypted 
-    ```php      
-      $validator = validator(['email'=>'foo@bar.com'], ['email'=>'exists_encrypted:users,email']);
-      $validator = validator(['email'=>'foo@bar.com'], ['email'=>'unique_encrypted:users,email']);
-    ```
+
+If you are using exists and unique rules with encrypted values replace it with exists_encrypted and unique_encrypted
+
+```php      
+$validator = validator(['email'=>'foo@bar.com'], ['email'=>'exists_encrypted:users,email']);
+$validator = validator(['email'=>'foo@bar.com'], ['email'=>'unique_encrypted:users,email']);
+```
 
 ## Frequently Asked Question
+
 #### Can I search encrypted data?
+
 YES! You will able to search on attributes which are encrypted by this package because.
 If you need to search on data then use the `whereEncrypted` and `orWhereEncrypted` function:
+
+```php
+$user = User::whereEncrypted('email', 'test@gmail.com')
+            ->orWhereEncrypted('email', 'test2@gmail.com')
+            ->firstOrFail();
 ```
-    User::whereEncrypted('email','test@gmail.com')->orWhereEncrypted('email','test2@gmail.com')->firstOrFail();
-```
+
 It will automatically added on the eloquent once the model uses `EncryptedAttribute`
 
 #### Can I encrypt all my `User` model data?
+
 Aside from IDs you can encrypt everything you wan't
 
 For example:
 Logging-in on encrypted email
-```
-$user = User::whereEncrypted('email','test@gmail.com')->filter(function ($item) use ($request) {
-        return Hash::check($password, $item->password);
-    })->where('active',1)->first();
+
+```php
+$user = User::whereEncrypted('email', 'test@gmail.com')
+    ->where('active', true)
+    ->get()
+    ->filter(fn($user) => Hash::check(request()->get('password'), $user->password))
+    ->first();
 ```
 
 ## Credits
+
 This package was inspired from the following:
- [austinheap/laravel-database-encryption](https://github.com/austinheap/laravel-database-encryption)
- [magros/laravel-model-encryption](https://github.com/magros/laravel-model-encryption)
- [DustApplication/laravel-database-model-encryption](https://github.com/DustApplication/laravel-database-model-encryption.git)
- 
+- [elgiborsolution/laravel-database-encryption](https://github.com/elgiborsolution/laravel-database-encryption)
+  - [austinheap/laravel-database-encryption](https://github.com/austinheap/laravel-database-encryption)
+  - [magros/laravel-model-encryption](https://github.com/magros/laravel-model-encryption)
+  - [DustApplication/laravel-database-model-encryption](https://github.com/DustApplication/laravel-database-model-encryption.git)
+
 ## License
+
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
