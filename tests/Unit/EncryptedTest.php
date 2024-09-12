@@ -1,13 +1,14 @@
 <?php
 
-namespace ESolution\DBEncryption\Tests;
+namespace ESolution\DBEncryption\Tests\Unit;
 
-use Illuminate\Support\Facades\DB;
+use ESolution\DBEncryption\Tests\TestCase;
+use ESolution\DBEncryption\Tests\TestUser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 class EncryptedTest extends TestCase
 {
-
     use RefreshDatabase;
 
     /**
@@ -20,6 +21,7 @@ class EncryptedTest extends TestCase
 
         $user = $this->createUser($name, $email);
 
+        $this->assertNotEquals($user->getRawOriginal('email'), $email);
         $this->assertEquals($user->email, $email);
         $this->assertEquals($user->name, $name);
     }
@@ -47,13 +49,21 @@ class EncryptedTest extends TestCase
     {
         TestUser::$enableEncryption = false;
 
-        $user = $this->createUser();
+        $name = 'John';
+        $email = 'john@doe.com';
+        $user = new TestUser();
+
+        DB::table('test_users')->insert([
+            'name'     => $name,
+            'email'    => $email,
+            'password' => 'abcdef',
+        ]);
 
         $this->artisan('encryptable:encryptModel', ['model' => TestUser::class]);
         $raw = DB::table('test_users')->select('*')->first();
 
-        $this->assertEquals($raw->email, $user->encryptAttribute($user->email));
-        $this->assertEquals($raw->name, $user->encryptAttribute($user->name));
+        $this->assertEquals($user->encryptAttribute($name), $raw->name);
+        $this->assertEquals($user->encryptAttribute($email), $raw->email);
 
         TestUser::$enableEncryption = true;
     }
@@ -77,7 +87,7 @@ class EncryptedTest extends TestCase
      */
     public function it_assert_that_where_does_not_retrieve_a_user_with_incorrect_email()
     {
-        $this->createUser();
+        $this->createUser("John", "foo@bar.com");
 
         $user = TestUser::whereEncrypted('email', '=', 'non_existing@email.com')->first();
 
@@ -104,7 +114,7 @@ class EncryptedTest extends TestCase
      */
     public function it_test_that_validation_rule_exists_when_record_does_not_exists_is_working()
     {
-        $this->createUser();
+        $this->createUser("John", "foo@bar.com");
 
         $validator = validator(
             ['email' => 'non_existing@email.com'],
@@ -134,7 +144,7 @@ class EncryptedTest extends TestCase
      */
     public function it_test_that_validation_rule_unique_when_record_does_not_exists_is_working()
     {
-        $this->createUser();
+        $this->createUser("John", "foo@bar.com");
 
         $validator = validator(
             ['email' => 'non_existing@email.com'],
@@ -150,12 +160,11 @@ class EncryptedTest extends TestCase
     public function it_tests_that_empty_values_are_not_encrypted()
     {
         $user = $this->createUser(null, 'example@email.com');
-        $raw = DB::table('test_users')->select('*')->first();
-
-        $this->assertEmpty($raw->name);
         $this->assertEmpty($user->name);
-    }
 
+        $raw = DB::table('test_users')->select('*')->first();
+        $this->assertEmpty($raw->name);
+    }
 
     /**
      * @test
@@ -164,7 +173,7 @@ class EncryptedTest extends TestCase
     {
         TestUser::$enableEncryption = false;
 
-        $user = $this->createUser();
+        $user = $this->createUser("John", "foo@bar.com");
 
         $this->artisan('encryptable:encryptModel', ['model' => TestUser::class]);
         $this->artisan('encryptable:decryptModel', ['model' => TestUser::class]);
@@ -182,7 +191,7 @@ class EncryptedTest extends TestCase
      */
     public function it_test_that_where_query_is_working_with_non_lowercase_values()
     {
-        $this->createUser();
+        $this->createUser("John", "jhon@doe.com");
         $this->assertNotNull(TestUser::whereEncrypted('email', '=', 'JhOn@DoE.cOm')->first());
     }
 

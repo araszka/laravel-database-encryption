@@ -3,26 +3,29 @@
  * src/Traits/EncryptedAttribute.php.
  *
  */
+
 namespace ESolution\DBEncryption\Traits;
 
 use ESolution\DBEncryption\Builders\EncryptionEloquentBuilder;
 use ESolution\DBEncryption\Encrypter;
 
-trait EncryptedAttribute {
+trait EncryptedAttribute
+{
 
     public static $enableEncryption = true;
 
-    function __construct() {
-      self::$enableEncryption = config('laravelDatabaseEncryption.enable_encryption');
+    function __construct()
+    {
+        self::$enableEncryption = config('laravelDatabaseEncryption.enable_encryption');
     }
 
-     /**
+    /**
      * @param $key
      * @return bool
      */
     public function isEncryptable($key)
     {
-        if(self::$enableEncryption){
+        if (self::$enableEncryption) {
             return in_array($key, $this->encryptable);
         }
 
@@ -37,44 +40,60 @@ trait EncryptedAttribute {
         return $this->encryptable;
     }
 
+    /**
+     * @param $key
+     * @return mixed|string
+     */
     public function getAttribute($key)
     {
-      $value = parent::getAttribute($key);
-      if ($this->isEncryptable($key) && (!is_null($value) && $value != ''))
-      {
-        try {
-          $value = Encrypter::decrypt($value);
-        } catch (\Exception $th) {}
-      }
-      return $value;
+        $value = parent::getAttribute($key);
+
+        if ($this->isEncryptable($key) && !empty($value)) {
+            try {
+                $value = Encrypter::decrypt($value);
+            } catch (\Exception $th) {
+            }
+        }
+
+        return $value;
     }
 
+    /**
+     * @param $key
+     * @param $value
+     * @return mixed
+     */
     public function setAttribute($key, $value)
     {
-      if ($this->isEncryptable($key) && (!is_null($value) && $value != ''))
-      {
-        try {
-          $value = Encrypter::encrypt($value);
-        } catch (\Exception $th) {}
-      }
-      return parent::setAttribute($key, $value);
+        if ($this->isEncryptable($key) && !empty($value)) {
+            try {
+                $value = Encrypter::encrypt($value);
+            } catch (\Exception $th) {
+            }
+        }
+
+        return parent::setAttribute($key, $value);
     }
 
+    /**
+     * @return array
+     */
     public function attributesToArray()
     {
         $attributes = parent::attributesToArray();
+
         if ($attributes) {
-          foreach ($attributes as $key => $value)
-          {
-            if ($this->isEncryptable($key) && (!is_null($value)) && $value != '')
-            {
-              $attributes[$key] = $value;
-              try {
-                $attributes[$key] = Encrypter::decrypt($value);
-              } catch (\Exception $th) {}
+            foreach ($attributes as $key => $value) {
+                if ($this->isEncryptable($key) && !empty($value)) {
+                    $attributes[$key] = $value;
+                    try {
+                        $attributes[$key] = Encrypter::decrypt($value);
+                    } catch (\Exception $th) {
+                    }
+                }
             }
-          }
         }
+
         return $attributes;
     }
 
@@ -85,26 +104,20 @@ trait EncryptedAttribute {
     }
 
     /**
-     * Decrypt Attribute
-     *
-     * @param string $value
-     *
-     * @return string
+     * @param string|null $value
+     * @return string|null
      */
-    public function decryptAttribute($value)
+    public function decryptAttribute(string $value = null): ?string
     {
-       return (!is_null($value) && $value != '') ? Encrypter::decrypt($value) : $value;
+        return !empty($value) ? Encrypter::decrypt($value) : $value;
     }
 
     /**
-     * Encrypt Attribute
-     *
-     * @param string $value
-     *
-     * @return string
+     * @param string|null $value
+     * @return string|null
      */
-    public function encryptAttribute($value)
+    public function encryptAttribute(string $value = null): ?string
     {
-        return (!is_null($value) && $value != '') ? Encrypter::encrypt($value) : $value;
+        return !empty($value) ? Encrypter::encrypt($value) : $value;
     }
 }
