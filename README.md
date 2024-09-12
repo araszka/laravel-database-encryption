@@ -49,11 +49,11 @@ For example:
 
 ```php
     
-    use ESolution\DBEncryption\Traits\EncryptedAttribute;
+    use ESolution\DBEncryption\Traits\ExtendedEncryption;
 
     class User extends Eloquent 
     {
-        use EncryptedAttribute;
+        use ExtendedEncryption;
        
         /**
          * The attributes that should be encrypted on save.

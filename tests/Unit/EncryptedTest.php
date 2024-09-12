@@ -5,6 +5,7 @@ namespace ESolution\DBEncryption\Tests\Unit;
 use ESolution\DBEncryption\Tests\TestCase;
 use ESolution\DBEncryption\Tests\TestUser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 
 class EncryptedTest extends TestCase
@@ -37,34 +38,8 @@ class EncryptedTest extends TestCase
 
         $userRaw = DB::table('test_users')->select('*')->first();
 
-        $this->assertEquals($email, $user->decryptAttribute($userRaw->email));
-        $this->assertEquals($name, $user->decryptAttribute($userRaw->name));
-    }
-
-    /**
-     * @test
-     */
-    public function it_test_that_encrypt_model_commands_encrypt_existing_records()
-    {
-        TestUser::$enableEncryption = false;
-
-        $name  = 'John';
-        $email = 'john@doe.com';
-        $user  = new TestUser();
-
-        DB::table('test_users')->insert([
-            'name'     => $name,
-            'email'    => $email,
-            'password' => 'abcdef',
-        ]);
-
-        $this->artisan('encryptable:encryptModel', ['model' => TestUser::class]);
-        $raw = DB::table('test_users')->select('*')->first();
-
-        $this->assertEquals($name, $user->decryptAttribute($raw->name));
-        $this->assertEquals($email, $user->decryptAttribute($raw->email));
-
-        TestUser::$enableEncryption = true;
+        $this->assertEquals($email, Crypt::decryptString($userRaw->email));
+        $this->assertEquals($name, Crypt::decryptString($userRaw->name));
     }
 
     /**
@@ -162,26 +137,6 @@ class EncryptedTest extends TestCase
 
         $raw = DB::table('test_users')->select('*')->first();
         $this->assertEmpty($raw->name);
-    }
-
-    /**
-     * @test
-     */
-    public function it_test_that_decrypt_command_is_working()
-    {
-        TestUser::$enableEncryption = false;
-
-        $user = $this->createUser("John", "foo@bar.com");
-
-        $this->artisan('encryptable:encryptModel', ['model' => TestUser::class]);
-        $this->artisan('encryptable:decryptModel', ['model' => TestUser::class]);
-        $raw = DB::table('test_users')->select('*')->first();
-
-
-        $this->assertEquals($user->email, $raw->email);
-        $this->assertEquals($user->name, $raw->name);
-
-        TestUser::$enableEncryption = true;
     }
 
     /**

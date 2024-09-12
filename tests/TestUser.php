@@ -3,13 +3,16 @@
 namespace ESolution\DBEncryption\Tests;
 
 use ESolution\DBEncryption\Tests\Database\Factories\TestUserFactory;
-use ESolution\DBEncryption\Traits\EncryptedAttribute;
+use ESolution\DBEncryption\Traits\ExtendedEncryption;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @method static TestUserFactory factory()
+ */
 class TestUser extends Model
 {
-    use HasFactory, EncryptedAttribute;
+    use HasFactory, ExtendedEncryption;
 
     /**
      * @var string[]
@@ -18,25 +21,15 @@ class TestUser extends Model
         'id',
     ];
 
-    /**
-     * @var string[]
-     */
-    protected $encryptable = [
-        'email',
-        'name'
-    ];
-
-    /**
-     * @var string[]
-     */
-    protected $camelcase = [
-        'name',
+    protected $casts = [
+        'email' => 'encrypted',
+        'name'  => 'encrypted',
     ];
 
     /**
      * @return TestUserFactory
      */
-    protected static function newFactory()
+    protected static function newFactory(): TestUserFactory
     {
         return TestUserFactory::new();
     }
