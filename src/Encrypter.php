@@ -54,7 +54,7 @@ class Encrypter
         $iv  = base64_encode($iv);
         $tag = base64_encode($tag ?: '');
 
-        $mac = self::$supportedCiphers[strtolower($cipher)]['aead']
+        $mac = self::$supportedCiphers[$cipher]['aead']
             ? '' // For AEAD-algorithms, the tag / MAC is returned by openssl_encrypt...
             : self::hash($iv, $value, $key);
 
@@ -74,49 +74,79 @@ class Encrypter
     public static function decrypt(string $value): string|false
     {
         $cipher = strtolower(config('app.cipher'));
-        $tag = null;
-        $key = self::getKey();
+        $key    = self::getKey();
 
         $payload = json_decode(base64_decode($value), true);
         $iv      = base64_decode($payload['iv']);
 
-        $tag = empty($payload['tag']) ? null : base64_decode($payload['tag']);
-
-//        $this->ensureTagIsValid(
-//            $tag = empty($payload['tag']) ? null : base64_decode($payload['tag'])
-//        );
-
-        $foundValidMac = false;
-
-        // Here we will decrypt the value. If we are able to successfully decrypt it
-        // we will then unserialize it and return it out to the caller. If we are
-        // unable to decrypt this value we will throw out an exception message.
-//        foreach ($this->getAllKeys() as $key) {
-//            if (
-//                $this->shouldValidateMac() &&
-//                ! ($foundValidMac = $foundValidMac || $this->validMacForKey($payload, $key))
-//            ) {
-//                continue;
-//            }
-
-        $decrypted = \openssl_decrypt(
-            $payload['value'], strtolower($cipher), $key, 0, $iv, $tag ?? ''
+        self::ensureTagIsValid(
+            $cipher,
+            $tag = empty($payload['tag']) ? null : base64_decode($payload['tag'])
         );
 
-//            if ($decrypted !== false) {
-//                break;
-//            }
-//        }
+        //TODO: Add support for previous encryption keys.
 
-//        if ($this->shouldValidateMac() && ! $foundValidMac) {
-//            throw new DecryptException('The MAC is invalid.');
-//        }
+        if (
+            self::shouldValidateMac($cipher) &&
+            !self::validMacForKey($payload, $key)
+        ) {
+            throw new DecryptException('The MAC is invalid.');
+        }
 
-        if (($decrypted ?? false) === false) {
+        $decrypted = openssl_decrypt(
+            data: $payload['value'],
+            cipher_algo: $cipher,
+            passphrase: $key,
+            iv: $iv,
+            tag: $tag ?? ''
+        );
+
+        if ($decrypted === false) {
             throw new DecryptException('Could not decrypt the data.');
         }
 
         return $decrypted;
+    }
+
+    /**
+     * Determine if the MAC is valid for the given payload and key.
+     *
+     * @param array  $payload
+     * @param string $key
+     * @return bool
+     */
+    protected static function validMacForKey(#[\SensitiveParameter] $payload, $key)
+    {
+        return hash_equals(
+            self::hash($payload['iv'], $payload['value'], $key), $payload['mac']
+        );
+    }
+
+    /**
+     * Determine if we should validate the MAC while decrypting.
+     *
+     * @return bool
+     */
+    protected static function shouldValidateMac(string $cipher)
+    {
+        return !self::$supportedCiphers[strtolower($cipher)]['aead'];
+    }
+
+    /**
+     * Ensure the given tag is a valid tag given the selected cipher.
+     *
+     * @param string $tag
+     * @return void
+     */
+    protected static function ensureTagIsValid(string $cipher, $tag)
+    {
+        if (self::$supportedCiphers[strtolower($cipher)]['aead'] && strlen($tag) !== 16) {
+            throw new DecryptException('Could not decrypt the data.');
+        }
+
+        if (!self::$supportedCiphers[strtolower($cipher)]['aead'] && is_string($tag)) {
+            throw new DecryptException('Unable to use tag because the cipher algorithm does not support AEAD.');
+        }
     }
 
     /**
