@@ -34,7 +34,7 @@ class Encrypter
      */
     public static function encrypt(string $value): string|false
     {
-        $cipher = config('laravelDatabaseEncryption.encrypt_method');
+        $cipher = strtolower(config('app.cipher'));
         $iv     = random_bytes(openssl_cipher_iv_length($cipher));
         $tag    = null;
         $key    = self::getKey();
@@ -73,7 +73,7 @@ class Encrypter
      */
     public static function decrypt(string $value): string|false
     {
-        $cipher = config('laravelDatabaseEncryption.encrypt_method');
+        $cipher = strtolower(config('app.cipher'));
         $tag = null;
         $key = self::getKey();
 
@@ -124,7 +124,7 @@ class Encrypter
      */
     public static function setBlockEncryptionModeStatement(): string
     {
-        return DB::statement("SET block_encryption_mode = ?;", [config('laravelDatabaseEncryption.encrypt_method')]);
+        return DB::statement("SET block_encryption_mode = ?;", [strtolower(config('app.cipher'))]);
     }
 
     /**
@@ -145,7 +145,7 @@ class Encrypter
      */
     protected static function hash(string $iv, string $value, string $key): string
     {
-        return hash_hmac(config('laravelDatabaseEncryption.hash_method'), $iv . $value, $key);
+        return hash_hmac('sha256', $iv . $value, $key);
     }
 
     /**

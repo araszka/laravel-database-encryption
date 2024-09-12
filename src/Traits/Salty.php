@@ -9,6 +9,6 @@ trait Salty
      */
     private function salt(): string
     {
-        return substr(hash(config('laravelDatabaseEncryption.hash_method'), config('laravelDatabaseEncryption.encrypt_key')), 0, 16);
+        return substr(hash('sha256', config('app.key')), 0, 16);
     }
 }
