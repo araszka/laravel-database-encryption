@@ -36,7 +36,7 @@ class Encrypter
     /**
      * @return string
      */
-    public static function blockEncryptionModeStatement(): string
+    public static function setBlockEncryptionModeStatement(): string
     {
         return DB::statement("SET block_encryption_mode = ?;", [config('laravelDatabaseEncryption.encrypt_method')]);
     }
