@@ -57,7 +57,7 @@ class DBEncryptionServiceProvider extends ServiceProvider
         Validator::extend('unique_encrypted', function ($attribute, $value, $parameters, $validator) {
 
             // Initialize
-            $salt = substr(hash('sha256', config('laravelDatabaseEncryption.encrypt_key')), 0, 16);
+            $salt = substr(hash(config('laravelDatabaseEncryption.hash_method'), config('laravelDatabaseEncryption.encrypt_key')), 0, 16);
 
             $withFilter = count($parameters) > 3 ? true : false;
 
@@ -81,7 +81,7 @@ class DBEncryptionServiceProvider extends ServiceProvider
         Validator::extend('exists_encrypted', function ($attribute, $value, $parameters, $validator) {
 
             // Initialize
-            $salt = substr(hash('sha256', config('laravelDatabaseEncryption.encrypt_key')), 0, 16);
+            $salt = substr(hash(config('laravelDatabaseEncryption.hash_method'), config('laravelDatabaseEncryption.encrypt_key')), 0, 16);
 
             $withFilter = count($parameters) > 3 ? true : false;
             if(!$withFilter){

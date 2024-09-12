@@ -10,13 +10,13 @@
     }
   ],
   "require": {
-    "php": ">=8.2"
+    "php": ">=8.2",
+    "ext-openssl": "*"
   },
   "require-dev": {
     "orchestra/testbench": "^9.4",
     "phpunit/phpunit": "^10.4",
-    "fakerphp/faker": "^1.23",
-    "illuminate/database": "*"
+    "fakerphp/faker": "^1.23"
   },
   "autoload": {
     "psr-4": {
