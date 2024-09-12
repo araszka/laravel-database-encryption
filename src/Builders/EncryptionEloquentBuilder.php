@@ -26,7 +26,7 @@ class EncryptionEloquentBuilder extends Builder
         $value      = $value ?: $opOrValue;
         $initVector = config('laravelDatabaseEncryption.encrypt_initialization_vector');
 
-        return $this->beforeQuery(fn() => Encrypter::blockEncryptionModeStatement())
+        return $this->beforeQuery(fn() => Encrypter::setBlockEncryptionModeStatement())
             ->whereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$column}`), '{$this->salt()}', '{$initVector}') USING utf8mb4) {$operation} ? ", [$value]);
     }
 
@@ -42,7 +42,7 @@ class EncryptionEloquentBuilder extends Builder
         $value      = $value ?: $opOrValue;
         $initVector = config('laravelDatabaseEncryption.encrypt_initialization_vector');
 
-        return $this->beforeQuery(fn() => Encrypter::blockEncryptionModeStatement())
+        return $this->beforeQuery(fn() => Encrypter::setBlockEncryptionModeStatement())
             ->orWhereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$column}`), '{$this->salt()}', '{$initVector}') USING utf8mb4) {$operation} ? ", [$value]);
     }
 
@@ -55,7 +55,7 @@ class EncryptionEloquentBuilder extends Builder
     {
         $initVector = config('laravelDatabaseEncryption.encrypt_initialization_vector');
 
-        return $this->beforeQuery(fn() => Encrypter::blockEncryptionModeStatement())
+        return $this->beforeQuery(fn() => Encrypter::setBlockEncryptionModeStatement())
             ->orderByRaw("CONVERT(AES_DECRYPT(FROM_bASE64(`{$column}`), '{$this->salt()}', '{$initVector}') USING utf8mb4) {$direction}");
     }
 }

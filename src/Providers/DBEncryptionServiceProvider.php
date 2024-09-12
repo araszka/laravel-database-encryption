@@ -67,7 +67,7 @@ class DBEncryptionServiceProvider extends ServiceProvider
 
             // Check using normal checker
             $data = DB::table($parameters[0])
-                ->beforeQuery(fn() => Encrypter::blockEncryptionModeStatement())
+                ->beforeQuery(fn() => Encrypter::setBlockEncryptionModeStatement())
                 ->whereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$parameters[1]}`), '{$this->salt()}', '{$initVector}') USING utf8mb4) = '{$value}' ");
 
             $data = $ignore_id != '' ? $data->where('id','!=',$ignore_id) : $data;
@@ -95,7 +95,7 @@ class DBEncryptionServiceProvider extends ServiceProvider
 
             // Check using normal checker
             $data = DB::table($parameters[0])
-                ->beforeQuery(fn() => Encrypter::blockEncryptionModeStatement())
+                ->beforeQuery(fn() => Encrypter::setBlockEncryptionModeStatement())
                 ->whereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$parameters[1]}`), '{$this->salt()}', '{$initVector}') USING utf8mb4) = '{$value}' ");
 
             $data = $ignore_id != '' ? $data->where('id','!=',$ignore_id) : $data;
