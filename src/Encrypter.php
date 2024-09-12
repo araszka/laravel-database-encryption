@@ -6,15 +6,13 @@
 
 namespace ESolution\DBEncryption;
 
-use ESolution\DBEncryption\Traits\Salty;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Encryption\EncryptException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class Encrypter
 {
-    use Salty;
-
     /**
      * The supported cipher algorithms and their properties.
      *
@@ -37,7 +35,7 @@ class Encrypter
         $cipher = strtolower(config('app.cipher'));
         $iv     = random_bytes(openssl_cipher_iv_length($cipher));
         $tag    = null;
-        $key    = self::getKey();
+        $key    = self::getEncryptionKey();
 
         $value = openssl_encrypt(
             data: $value,
@@ -74,7 +72,7 @@ class Encrypter
     public static function decrypt(string $value): string|false
     {
         $cipher = strtolower(config('app.cipher'));
-        $key    = self::getKey();
+        $key    = self::getEncryptionKey();
 
         $payload = json_decode(base64_decode($value), true);
         $iv      = base64_decode($payload['iv']);
@@ -158,14 +156,6 @@ class Encrypter
     }
 
     /**
-     * @return string
-     */
-    protected static function getKey(): string
-    {
-        return (new self())->salt();
-    }
-
-    /**
      * Create a MAC for the given value.
      *
      * @param string $iv
@@ -183,12 +173,25 @@ class Encrypter
      * @param string $salt
      * @return string
      */
-    public static function getDecryptSql(string $column, string $salt): string
+    public static function getDecryptSql(string $column): string
     {
+        $salt      = self::getEncryptionKey();
         $jsonPart  = "CONVERT(FROM_BASE64(`$column`) USING utf8mb4)";
         $ivPart    = "FROM_BASE64(JSON_UNQUOTE(JSON_EXTRACT($jsonPart, '$.iv')))";
         $valuePart = "FROM_BASE64(JSON_UNQUOTE(json_extract($jsonPart, '$.value')))";
 
         return "AES_DECRYPT($valuePart, '$salt', $ivPart)";
+    }
+
+    /**
+     * @return false|string
+     */
+    public static function getEncryptionKey(): false|string
+    {
+        if (Str::startsWith($key = config('app.key'), $prefix = 'base64:')) {
+            $key = base64_decode(Str::after($key, $prefix));
+        }
+
+        return $key;
     }
 }
