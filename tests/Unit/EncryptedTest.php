@@ -21,6 +21,7 @@ class EncryptedTest extends TestCase
 
         $user = $this->createUser($name, $email);
 
+        $this->assertNotEquals($user->getRawOriginal('email'), $email);
         $this->assertEquals($user->email, $email);
         $this->assertEquals($user->name, $name);
     }

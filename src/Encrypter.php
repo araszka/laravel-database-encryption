@@ -7,6 +7,7 @@
 namespace ESolution\DBEncryption;
 
 use ESolution\DBEncryption\Traits\Salty;
+use Illuminate\Support\Facades\DB;
 
 class Encrypter
 {
@@ -19,7 +20,7 @@ class Encrypter
      */
     public static function encrypt($value)
     {
-        return openssl_encrypt($value, config('laravelDatabaseEncryption.encrypt_method'), self::getKey(), 0, $iv = '');
+        return openssl_encrypt($value, config('laravelDatabaseEncryption.encrypt_method'), self::getKey(), 0, config('laravelDatabaseEncryption.encrypt_initialization_vector'));
     }
 
     /**
@@ -29,7 +30,15 @@ class Encrypter
      */
     public static function decrypt($value)
     {
-        return openssl_decrypt($value, config('laravelDatabaseEncryption.encrypt_method'), self::getKey(), 0, $iv = '');
+        return openssl_decrypt($value, config('laravelDatabaseEncryption.encrypt_method'), self::getKey(), 0, config('laravelDatabaseEncryption.encrypt_initialization_vector'));
+    }
+
+    /**
+     * @return string
+     */
+    public static function blockEncryptionModeStatement(): string
+    {
+        return DB::statement("SET block_encryption_mode = ?;", [config('laravelDatabaseEncryption.encrypt_method')]);
     }
 
     /**

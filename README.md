@@ -15,12 +15,12 @@
 * Minimal configuration
 * Include searching encrypted data using the following:
     `whereEncrypted` and `orWhereEncrypted`
-* uses openssl for encrypting and decrypting fields
+* Uses openssl for encrypting and decrypting fields
 
 ## Requirements
 
-* Laravel: >= 5
-* PHP: >= 7.3
+* Laravel: >= 10
+* PHP: >= 8.2
 
 ## Schema Requirements
 
@@ -40,15 +40,6 @@ Via Composer command line:
 $ composer require elgibor-solution/laravel-database-encryption
 ```
 
-### Step 2: Add ServiceProvider to your app/config.php file (Laravel 5.4 or below)
-Add the service provider to the providers array in the config/app.php config file as follows:
-```php
-    'providers' => [
-        ...
-        \ESolution\DBEncryption\Providers\DBEncryptionServiceProvider::class,
-    ],
-```
-
 ## Usage
 
 Use the `EncryptedAttribute` trait in any Eloquent model that you wish to apply encryption
@@ -60,7 +51,8 @@ For example:
     
     use ESolution\DBEncryption\Traits\EncryptedAttribute;
 
-    class User extends Eloquent {
+    class User extends Eloquent 
+    {
         use EncryptedAttribute;
        
         /**
@@ -69,7 +61,8 @@ For example:
          * @var array
          */
         protected $encryptable = [
-            'first_name', 'last_name'
+            'first_name', 
+            'last_name'
         ];
     }
 ```
@@ -86,11 +79,14 @@ similar to laravel eloquent `where` and `orWhere`.
     namespace App\Http\Controllers;
 
     use App\User;
-    class UsersController extends Controller {
+    
+    class UsersController extends Controller 
+    {
         public function index(Request $request)
         {
             $user = User::whereEncrypted('first_name','john')
-                        ->orWhereEncrypted('last_name','!=','Doe')->firstOrFail();
+                        ->orWhereEncrypted('last_name','!=','Doe')
+                        ->firstOrFail();
             
             return $user;
         }

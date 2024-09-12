@@ -5,6 +5,7 @@
  */
 namespace ESolution\DBEncryption\Providers;
 
+use ESolution\DBEncryption\Encrypter;
 use ESolution\DBEncryption\Traits\Salty;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -60,11 +61,15 @@ class DBEncryptionServiceProvider extends ServiceProvider
     {
         Validator::extend('unique_encrypted', function ($attribute, $value, $parameters, $validator) {
             // Initialize
+            $initVector = config('laravelDatabaseEncryption.encrypt_initialization_vector');
             $withFilter = count($parameters) > 3;
             $ignore_id = $parameters[2] ?? '';
 
             // Check using normal checker
-            $data = DB::table($parameters[0])->whereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$parameters[1]}`), '{$this->salt()}') USING utf8mb4) = '{$value}' ");
+            $data = DB::table($parameters[0])
+                ->beforeQuery(fn() => Encrypter::blockEncryptionModeStatement())
+                ->whereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$parameters[1]}`), '{$this->salt()}', '{$initVector}') USING utf8mb4) = '{$value}' ");
+
             $data = $ignore_id != '' ? $data->where('id','!=',$ignore_id) : $data;
 
             if ($withFilter) {
@@ -80,6 +85,7 @@ class DBEncryptionServiceProvider extends ServiceProvider
 
         Validator::extend('exists_encrypted', function ($attribute, $value, $parameters, $validator) {
             // Initialize
+            $initVector = config('laravelDatabaseEncryption.encrypt_initialization_vector');
             $withFilter = count($parameters) > 3;
             if(!$withFilter){
                 $ignore_id = $parameters[2] ?? '';
@@ -88,7 +94,10 @@ class DBEncryptionServiceProvider extends ServiceProvider
             }
 
             // Check using normal checker
-            $data = DB::table($parameters[0])->whereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$parameters[1]}`), '{$this->salt()}') USING utf8mb4) = '{$value}' ");
+            $data = DB::table($parameters[0])
+                ->beforeQuery(fn() => Encrypter::blockEncryptionModeStatement())
+                ->whereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$parameters[1]}`), '{$this->salt()}', '{$initVector}') USING utf8mb4) = '{$value}' ");
+
             $data = $ignore_id != '' ? $data->where('id','!=',$ignore_id) : $data;
 
             if ($withFilter) {

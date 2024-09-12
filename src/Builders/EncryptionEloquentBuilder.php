@@ -6,6 +6,7 @@
 
 namespace ESolution\DBEncryption\Builders;
 
+use ESolution\DBEncryption\Encrypter;
 use ESolution\DBEncryption\Traits\Salty;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -21,10 +22,12 @@ class EncryptionEloquentBuilder extends Builder
      */
     public function whereEncrypted(string $column, string $opOrValue, string $value = null): self
     {
-        $operation = isset($value) ? $opOrValue : '=';
-        $value     = $value ?: $opOrValue;
+        $operation  = isset($value) ? $opOrValue : '=';
+        $value      = $value ?: $opOrValue;
+        $initVector = config('laravelDatabaseEncryption.encrypt_initialization_vector');
 
-        return self::whereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$column}`), '{$this->salt()}') USING utf8mb4) {$operation} ? ", [$value]);
+        return $this->beforeQuery(fn() => Encrypter::blockEncryptionModeStatement())
+            ->whereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$column}`), '{$this->salt()}', '{$initVector}') USING utf8mb4) {$operation} ? ", [$value]);
     }
 
     /**
@@ -35,10 +38,12 @@ class EncryptionEloquentBuilder extends Builder
      */
     public function orWhereEncrypted(string $column, string $opOrValue, string $value = null): self
     {
-        $operation = isset($value) ? $opOrValue : '=';
-        $value     = $value ?: $opOrValue;
+        $operation  = isset($value) ? $opOrValue : '=';
+        $value      = $value ?: $opOrValue;
+        $initVector = config('laravelDatabaseEncryption.encrypt_initialization_vector');
 
-        return self::orWhereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$column}`), '{$this->salt()}') USING utf8mb4) {$operation} ? ", [$value]);
+        return $this->beforeQuery(fn() => Encrypter::blockEncryptionModeStatement())
+            ->orWhereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$column}`), '{$this->salt()}', '{$initVector}') USING utf8mb4) {$operation} ? ", [$value]);
     }
 
     /**
@@ -48,6 +53,9 @@ class EncryptionEloquentBuilder extends Builder
      */
     public function orderByEncrypted(string $column, string $direction = 'asc'): self
     {
-        return self::orderByRaw("CONVERT(AES_DECRYPT(FROM_bASE64(`{$column}`), '{$this->salt()}') USING utf8mb4) {$direction}");
+        $initVector = config('laravelDatabaseEncryption.encrypt_initialization_vector');
+
+        return $this->beforeQuery(fn() => Encrypter::blockEncryptionModeStatement())
+            ->orderByRaw("CONVERT(AES_DECRYPT(FROM_bASE64(`{$column}`), '{$this->salt()}', '{$initVector}') USING utf8mb4) {$direction}");
     }
 }
