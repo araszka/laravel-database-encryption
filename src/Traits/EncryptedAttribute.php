@@ -9,9 +9,18 @@ namespace ESolution\DBEncryption\Traits;
 use ESolution\DBEncryption\Builders\EncryptionEloquentBuilder;
 use ESolution\DBEncryption\Encrypter;
 
+/**
+ * @method static EncryptionEloquentBuilder query()
+ * @method static EncryptionEloquentBuilder whereEncrypted(string $column, string $opOrValue, string $value = null)
+ * @method static EncryptionEloquentBuilder orWhereEncrypted(string $column, string $opOrValue, string $value = null)
+ * @method static EncryptionEloquentBuilder whereInEncrypted(string $column, array $values)
+ * @method static EncryptionEloquentBuilder orderByEncrypted(string $column, string $direction = 'asc')
+ */
 trait EncryptedAttribute
 {
-
+    /**
+     * @var bool
+     */
     public static $enableEncryption = true;
 
     function __construct()
@@ -115,6 +124,7 @@ trait EncryptedAttribute
     /**
      * @param string|null $value
      * @return string|null
+     * @throws \Exception
      */
     public function encryptAttribute(string $value = null): ?string
     {
