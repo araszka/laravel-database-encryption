@@ -2,7 +2,7 @@
 
 [![MIT Licensed](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)
 
-## Package for encrypting and decrypting model attributes for Laravel using openssl
+## Package to extend Eloquent with the capability to search in encrypted values
 
 ## Key Features
 
