@@ -11,7 +11,8 @@
   ],
   "require": {
     "php": ">=8.2",
-    "ext-openssl": "*"
+    "ext-openssl": "*",
+    "laravel/framework": "^11.0|^10.0"
   },
   "require-dev": {
     "orchestra/testbench": "^9.4",
@@ -25,15 +26,15 @@
   },
   "autoload-dev": {
     "psr-4": {
-        "ESolution\\DBEncryption\\Tests\\": "tests",
-        "ESolution\\DBEncryption\\Tests\\Database\\Factories\\": "tests/database/factories"
+      "ESolution\\DBEncryption\\Tests\\": "tests",
+      "ESolution\\DBEncryption\\Tests\\Database\\Factories\\": "tests/database/factories"
     }
   },
   "extra": {
     "laravel": {
-        "providers": [
-            "ESolution\\DBEncryption\\Providers\\DBEncryptionServiceProvider"
-        ]
+      "providers": [
+        "ESolution\\DBEncryption\\Providers\\DBEncryptionServiceProvider"
+      ]
     }
   },
   "scripts": {
