@@ -45,6 +45,20 @@ class EncryptionEloquentBuilder extends Builder
 
     /**
      * @param string $column
+     * @param array  $values
+     * @return self
+     */
+    public function whereInEncrypted(string $column, array $values): self
+    {
+        $decryptSql   = Encrypter::getDecryptSql($column);
+        $placeholders = implode(',', array_fill(0, count($values), '?'));
+
+        return $this->beforeQuery(fn() => Encrypter::setBlockEncryptionModeStatement())
+            ->whereRaw("$decryptSql IN ($placeholders)", [$values]);
+    }
+
+    /**
+     * @param string $column
      * @param string $direction
      * @return self
      */
