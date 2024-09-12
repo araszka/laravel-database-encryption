@@ -124,6 +124,7 @@ trait EncryptedAttribute
     /**
      * @param string|null $value
      * @return string|null
+     * @throws \Exception
      */
     public function encryptAttribute(string $value = null): ?string
     {
