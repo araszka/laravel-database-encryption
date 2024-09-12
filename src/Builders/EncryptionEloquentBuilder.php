@@ -19,6 +19,8 @@ class EncryptionEloquentBuilder extends Builder
      */
     public function whereEncrypted(string $column, string $opOrValue, string $value = null): self
     {
+        //TODO: Add test
+
         $operation  = isset($value) ? $opOrValue : '=';
         $value      = $value ?: $opOrValue;
         $decryptSql = Encrypter::getDecryptSql($column);
@@ -50,6 +52,8 @@ class EncryptionEloquentBuilder extends Builder
      */
     public function whereInEncrypted(string $column, array $values): self
     {
+        //TODO: Add test
+
         $decryptSql   = Encrypter::getDecryptSql($column);
         $placeholders = implode(',', array_fill(0, count($values), '?'));
 
@@ -64,6 +68,8 @@ class EncryptionEloquentBuilder extends Builder
      */
     public function orderByEncrypted(string $column, string $direction = 'asc'): self
     {
+        //TODO: Add test
+
         return $this->beforeQuery(fn() => Encrypter::setBlockEncryptionModeStatement())
             ->orderByRaw(Encrypter::getDecryptSql($column) . " $direction");
     }

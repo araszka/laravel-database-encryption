@@ -6,8 +6,6 @@
 
 namespace ESolution\DBEncryption\Providers;
 
-use ESolution\DBEncryption\Console\Commands\DecryptModel;
-use ESolution\DBEncryption\Console\Commands\EncryptModel;
 use ESolution\DBEncryption\Encrypter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -25,36 +23,6 @@ class DBEncryptionServiceProvider extends ServiceProvider
      * @return void
      */
     public function boot()
-    {
-        $this->bootValidators();
-
-        if ($this->app->runningInConsole()) {
-
-            $this->publishes([
-                __DIR__ . '/../Config/config.php' => config_path('laravelDatabaseEncryption.php'),
-            ], 'config');
-
-            $this->commands([
-                EncryptModel::class,
-                DecryptModel::class,
-            ]);
-        }
-    }
-
-    /**
-     * Register the application services.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        $this->mergeConfigFrom(__DIR__ . '/../Config/config.php', 'laravelDatabaseEncryption');
-    }
-
-    /**
-     * @return void
-     */
-    private function bootValidators()
     {
         Validator::extend('unique_encrypted', function ($attribute, $value, $parameters, $validator) {
             // Initialize
