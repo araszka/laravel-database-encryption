@@ -9,7 +9,15 @@
       "email": "info@elgibor-solution.com"
     }
   ],
-  "require": {},
+  "require": {
+    "php": ">=8.2"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^9.4",
+    "phpunit/phpunit": "^10.4",
+    "fakerphp/faker": "^1.23",
+    "illuminate/database": "*"
+  },
   "autoload": {
     "psr-4": {
       "ESolution\\DBEncryption\\": "src"
@@ -20,10 +28,6 @@
         "ESolution\\DBEncryption\\Tests\\": "tests",
         "ESolution\\DBEncryption\\Tests\\Database\\Factories\\": "tests/database/factories"
     }
-  },
-  "require-dev": {
-    "orchestra/testbench": "^6.0",
-    "phpunit/phpunit": "^9.4"
   },
   "extra": {
     "laravel": {

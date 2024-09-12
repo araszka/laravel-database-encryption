@@ -6,3 +6,5 @@ src/Console/.DS_Store
 src/Console/Commands/.DS_Store
 src/Traits/.DS_Store
 src/Providers/.DS_Store
+/.phpunit.result.cache
+/.phpunit.cache/
