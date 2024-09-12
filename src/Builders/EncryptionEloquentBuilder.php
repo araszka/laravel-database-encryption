@@ -6,10 +6,13 @@
 
 namespace ESolution\DBEncryption\Builders;
 
+use ESolution\DBEncryption\Traits\Salty;
 use Illuminate\Database\Eloquent\Builder;
 
 class EncryptionEloquentBuilder extends Builder
 {
+    use Salty;
+
     /**
      * @param string      $column
      * @param string      $opOrValue
@@ -46,13 +49,5 @@ class EncryptionEloquentBuilder extends Builder
     public function orderByEncrypted(string $column, string $direction = 'asc'): self
     {
         return self::orderByRaw("CONVERT(AES_DECRYPT(FROM_bASE64(`{$column}`), '{$this->salt()}') USING utf8mb4) {$direction}");
-    }
-
-    /**
-     * @return string
-     */
-    private function salt(): string
-    {
-        return substr(hash(config('laravelDatabaseEncryption.hash_method'), config('laravelDatabaseEncryption.encrypt_key')), 0, 16);
     }
 }

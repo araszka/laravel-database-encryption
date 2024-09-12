@@ -5,6 +5,7 @@
  */
 namespace ESolution\DBEncryption\Providers;
 
+use ESolution\DBEncryption\Traits\Salty;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
@@ -14,6 +15,8 @@ use ESolution\DBEncryption\Console\Commands\DecryptModel;
 
 class DBEncryptionServiceProvider extends ServiceProvider
 {
+    use Salty;
+
     /**
      * Bootstrap the application services.
      *
@@ -50,21 +53,18 @@ class DBEncryptionServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../Config/config.php', 'laravelDatabaseEncryption');
     }
 
-
+    /**
+     * @return void
+     */
     private function bootValidators()
     {
-
         Validator::extend('unique_encrypted', function ($attribute, $value, $parameters, $validator) {
-
             // Initialize
-            $salt = substr(hash(config('laravelDatabaseEncryption.hash_method'), config('laravelDatabaseEncryption.encrypt_key')), 0, 16);
-
-            $withFilter = count($parameters) > 3 ? true : false;
-
-            $ignore_id = isset($parameters[2]) ? $parameters[2] : '';
+            $withFilter = count($parameters) > 3;
+            $ignore_id = $parameters[2] ?? '';
 
             // Check using normal checker
-            $data = DB::table($parameters[0])->whereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$parameters[1]}`), '{$salt}') USING utf8mb4) = '{$value}' ");
+            $data = DB::table($parameters[0])->whereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$parameters[1]}`), '{$this->salt()}') USING utf8mb4) = '{$value}' ");
             $data = $ignore_id != '' ? $data->where('id','!=',$ignore_id) : $data;
 
             if ($withFilter) {
@@ -79,19 +79,16 @@ class DBEncryptionServiceProvider extends ServiceProvider
         });
 
         Validator::extend('exists_encrypted', function ($attribute, $value, $parameters, $validator) {
-
             // Initialize
-            $salt = substr(hash(config('laravelDatabaseEncryption.hash_method'), config('laravelDatabaseEncryption.encrypt_key')), 0, 16);
-
-            $withFilter = count($parameters) > 3 ? true : false;
+            $withFilter = count($parameters) > 3;
             if(!$withFilter){
-                $ignore_id = isset($parameters[2]) ? $parameters[2] : '';
+                $ignore_id = $parameters[2] ?? '';
             }else{
-                $ignore_id = isset($parameters[4]) ? $parameters[4] : '';
+                $ignore_id = $parameters[4] ?? '';
             }
 
             // Check using normal checker
-            $data = DB::table($parameters[0])->whereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$parameters[1]}`), '{$salt}') USING utf8mb4) = '{$value}' ");
+            $data = DB::table($parameters[0])->whereRaw("CONVERT(AES_DECRYPT(FROM_BASE64(`{$parameters[1]}`), '{$this->salt()}') USING utf8mb4) = '{$value}' ");
             $data = $ignore_id != '' ? $data->where('id','!=',$ignore_id) : $data;
 
             if ($withFilter) {

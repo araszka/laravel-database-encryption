@@ -6,8 +6,11 @@
 
 namespace ESolution\DBEncryption;
 
+use ESolution\DBEncryption\Traits\Salty;
+
 class Encrypter
 {
+    use Salty;
 
     /**
      * @param string $value
@@ -30,13 +33,10 @@ class Encrypter
     }
 
     /**
-     * Get app key for encryption key
-     *
      * @return string
      */
-    protected static function getKey()
+    protected static function getKey(): string
     {
-        $salt = substr(hash(config('laravelDatabaseEncryption.hash_method'), config('laravelDatabaseEncryption.encrypt_key')), 0, 16);
-        return $salt;
+        return (new self())->salt();
     }
 }
