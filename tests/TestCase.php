@@ -44,15 +44,6 @@ class TestCase extends \Orchestra\Testbench\TestCase
             'password' => 'abcdef',
         ]);
 
-
-//        $user = TestUser::factory()
-//            ->state([
-//                "name"     => $name,
-//                "email"    => $email,
-//                "password" => "abcdef",
-//            ])
-//            ->create();
-
         return $user;
     }
 }
