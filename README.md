@@ -1,3 +1,8 @@
+# INSECURE WARNING
+
+This package is considered insecure, as it may leak your app key through database logs or process list.
+DO NOT USE IN SECURITY RELEVANT APPLICATIONS!
+
 # Laravel Database Encryption Package
 
 [![MIT Licensed](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)
